@@ -1,50 +1,8 @@
 from __future__ import annotations
 from typing import TypeAlias
-from enum import Enum, auto
+from .types import TropicalMode
+from .TropicalGlobal import get_global_tropical_mode
 import math
-from contextlib import contextmanager
-
-
-class TropicalMode(Enum):
-    """
-    Enum representing the modes of tropical algebra.
-    """
-
-    MIN_PLUS = auto()
-    MAX_PLUS = auto()
-
-
-_global_tropical_mode = TropicalMode.MIN_PLUS
-
-
-def set_global_tropical_mode(mode: TropicalMode):
-    """
-    Set the global tropical mode for the algebra operations.
-
-    :param mode: The TropicalMode to set as global.
-    """
-    global _global_tropical_mode
-    if mode not in [TropicalMode.MIN_PLUS, TropicalMode.MAX_PLUS]:
-        raise ValueError(
-            "Invalid tropical mode. Use TropicalMode.MIN_PLUS or TropicalMode.MAX_PLUS."
-        )
-    _global_tropical_mode = mode
-
-
-@contextmanager
-def tropical_mode(mode: TropicalMode):
-    """
-    Context manager to temporarily set the tropical mode.
-
-    :param mode: The TropicalMode to set for the duration of the context.
-    """
-    global _global_tropical_mode
-    original_mode = _global_tropical_mode
-    try:
-        set_global_tropical_mode(mode)
-        yield
-    finally:
-        set_global_tropical_mode(original_mode)
 
 
 class TropicalElement:
@@ -64,7 +22,9 @@ class TropicalElement:
         based on the current mode or the envireonment.
         """
         mode = (
-            _global_tropical_mode if not isinstance(cls, TropicalElement) else cls.mode
+            get_global_tropical_mode()
+            if not isinstance(cls, TropicalElement)
+            else cls.mode
         )
         return cls(math.inf if mode == TropicalMode.MIN_PLUS else -math.inf)
 
@@ -116,7 +76,7 @@ class TropicalElement:
 
         :return: The TropicalMode of the element.
         """
-        return self._mode if self._mode is not None else _global_tropical_mode
+        return self._mode if self._mode is not None else get_global_tropical_mode()
 
     def __add__(self, other: TropicalScalar) -> TropicalElement:
         """
@@ -227,9 +187,6 @@ class TropicalElement:
         """
         other = self._require_compatible(other)
         return self is other
-
-    def __array__(self, dtype=None):
-        raise TypeError("Cannot convert Tropical to a raw array")
 
 
 TropicalScalar: TypeAlias = TropicalElement | int | float
